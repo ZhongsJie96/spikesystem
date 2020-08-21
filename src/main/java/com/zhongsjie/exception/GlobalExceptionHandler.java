@@ -23,6 +23,7 @@ public class GlobalExceptionHandler {
     /** 拦截异常，ExceptionHandler() 会处理抛出的Exception异常及其子类异常 */
     @ExceptionHandler(value=Exception.class)
     public Result<String> exceptionHandler(HttpServletRequest request, Exception e) {
+        e.printStackTrace();
         if (e instanceof BindException) {
             BindException ex = (BindException) e;
             // 获取异常信息
