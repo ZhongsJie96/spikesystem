@@ -62,7 +62,7 @@ public class SpikeUserService {
             throw new GlobalException(CodeMsg.PASSWORD_ERROR);
         }
 
-        // 生成cookie,需要将token添加到cookie中
+        // 生成cookie,需要将token添加到cookie中，不用每次都生成token
         String token = UUIDUtil.uuid();
         // 登录成功之后将token和用户信息缓存到redis
         addCookie(response, token, user);
