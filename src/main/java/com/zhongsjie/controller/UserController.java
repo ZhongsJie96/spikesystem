@@ -1,0 +1,28 @@
+package com.zhongsjie.controller;
+
+import com.zhongsjie.domain.SpikeUser;
+import com.zhongsjie.redis.RedisService;
+import com.zhongsjie.result.Result;
+import com.zhongsjie.service.SpikeUserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+@RequestMapping("/user")
+public class UserController {
+
+    @Autowired
+    SpikeUserService spikeUserService;
+    @Autowired
+    RedisService redisService;
+
+    @RequestMapping("/info")
+    @ResponseBody
+    public Result<SpikeUser> info(Model model, SpikeUser user) {
+        return Result.success(user);
+    }
+
+}

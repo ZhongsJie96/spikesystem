@@ -2,15 +2,25 @@ package com.zhongsjie.controller;
 
 
 import com.zhongsjie.domain.SpikeUser;
+import com.zhongsjie.redis.GoodsKey;
+import com.zhongsjie.redis.RedisService;
 import com.zhongsjie.service.GoodsService;
 import com.zhongsjie.service.SpikeUserService;
 import com.zhongsjie.vo.GoodsVo;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.thymeleaf.context.IWebContext;
+import org.thymeleaf.context.WebContext;
+import org.thymeleaf.spring5.view.ThymeleafViewResolver;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 @Controller
@@ -21,24 +31,56 @@ public class GoodController {
     SpikeUserService userService;
     @Autowired
     GoodsService goodsService;
+    @Autowired
+    RedisService redisService;
+    @Autowired
+    ThymeleafViewResolver thymeleafViewResolver;
+    @Autowired
+    ApplicationContext applicationContext;
 
 
-    @RequestMapping("/to_list")
-    public String list(Model model, SpikeUser user) {
+    /**返回html的源代码 */
+    @RequestMapping(value="/to_list", produces="text/html")
+    @ResponseBody
+    public String list(HttpServletRequest request, HttpServletResponse response, Model model, SpikeUser user) {
 //                       @CookieValue(value=SpikeUserService.COOKI_NAME_TOKEN, required = false) String cookieToken,
 //                       @RequestParam(value=SpikeUserService.COOKI_NAME_TOKEN, required = false) String paramToken
-
         model.addAttribute("user", user);
+
+        // 取缓存
+        String html = redisService.get(GoodsKey.getGoodsList, "", String.class);
+        if (!StringUtils.isEmpty(html)) {
+            return html;
+        }
+
         List<GoodsVo> goodsList = goodsService.listGoodsVo();
-        // 传到页面(html)上进行展示
+        // 传到页面(goodsList.html)上进行展示
         model.addAttribute("goodsList", goodsList);
-        return "goods_list";
+//        return "goods_list";
+
+        // Spring5中SpringWebContext方法过时
+        IWebContext ctx =new WebContext(request,response,
+                request.getServletContext(),request.getLocale(),model.asMap());
+
+        // 手动渲染
+        html = thymeleafViewResolver.getTemplateEngine().process("goods_list", ctx);
+        if (!StringUtils.isEmpty(html)) {
+            redisService.set(GoodsKey.getGoodsList,"", html);
+        }
+        // 返回页面
+        return html;
     }
 
-    @RequestMapping("/to_detail/{goodsId}")
-    public String detail(Model model,SpikeUser user,
+    @RequestMapping(value="/to_detail/{goodsId}", produces="text/html")
+    @ResponseBody
+    public String detail(HttpServletRequest request, HttpServletResponse response, Model model,SpikeUser user,
                          @PathVariable("goodsId")long goodsId) {
         model.addAttribute("user", user);
+
+        String html = redisService.get(GoodsKey.getGoodsDetail, ""+goodsId, String.class);
+        if (!StringUtils.isEmpty(html)) {
+            return html;
+        }
 
         GoodsVo goods = goodsService.getGoodsVoByGoodsId(goodsId);
         model.addAttribute("goods", goods);
@@ -61,7 +103,18 @@ public class GoodController {
         }
         model.addAttribute("spikeStatus", spikeStatus);
         model.addAttribute("remainSeconds", remainSeconds);
-        return "goods_detail";
+
+//        return "goods_detail";
+
+        IWebContext ctx =new WebContext(request,response,
+                request.getServletContext(),request.getLocale(),model.asMap());
+
+        // 手动渲染
+        html = thymeleafViewResolver.getTemplateEngine().process("goods_detail", ctx);
+        if (!StringUtils.isEmpty(html)) {
+            redisService.set(GoodsKey.getGoodsDetail,""+goodsId, html);
+        }
+        return html;
     }
 
 
