@@ -17,12 +17,11 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/spike")
@@ -42,6 +41,8 @@ public class SpikeController implements InitializingBean {
     @Autowired
     MQSender mqSender;
 
+    private Map<Long, Boolean> localOverMap = new HashMap<>();
+
     /**
      * 系统初始化时运行
      * @throws Exception
@@ -55,6 +56,8 @@ public class SpikeController implements InitializingBean {
         // 将商品列表缓存到Redis中
         for (GoodsVo goods : goodsVos) {
             redisService.set(GoodsKey.getSpikeGoodsStock, "" + goods.getId(), goods.getStockCount());
+            // 本地标记减少Redis请求
+            localOverMap.put(goods.getId(), false);
         }
 
     }
@@ -66,18 +69,32 @@ public class SpikeController implements InitializingBean {
      * @param goodsId
      * @return
      */
-    @RequestMapping(value = "/do_spike", method = RequestMethod.POST)
+    @RequestMapping(value = "/{path}/do_spike", method = RequestMethod.POST)
     @ResponseBody
     public Result<Integer> spike(Model model, SpikeUser user,
-                                   @RequestParam("goodsId") long goodsId) {
+                                 @RequestParam("goodsId") long goodsId,
+                                 @PathVariable("path")String path) {
         model.addAttribute("user", user);
         if (user == null) {
             return Result.error(CodeMsg.SESSION_ERROR);
         }
+        // 验证path
+        boolean check = spikeService.checkPath(user, goodsId, path);
+        if (!check) {
+            return Result.error(CodeMsg.REQUEST_ILLEGAL);
+        }
+
+        // 添加标记位
+        boolean over = localOverMap.get(goodsId);
+        if (over) {
+            return Result.error(CodeMsg.SPIKE_OVER);
+        }
+
         // 从Redis中预减
         Long remStock = redisService.decr(GoodsKey.getSpikeGoodsStock, "" + goodsId);
 
         if (remStock < 0) {
+            localOverMap.put(goodsId, true);
             return Result.error(CodeMsg.SPIKE_OVER);
         }
         // 判断是否已经秒杀到了
@@ -135,6 +152,26 @@ public class SpikeController implements InitializingBean {
         long result = spikeService.getSpikeResult(user.getId(), goodsId);
 
         return Result.success(result);
+    }
+
+    /**
+     * 随机获取秒杀地址
+     * @param model
+     * @param user
+     * @param goodsId
+     * @return
+     */
+    @RequestMapping(value = "/path", method = RequestMethod.GET)
+    @ResponseBody
+    public Result<String> getSpikePath(Model model, SpikeUser user,
+                                    @RequestParam("goodsId") long goodsId) {
+        model.addAttribute("user", user);
+        if (user == null) {
+            return Result.error(CodeMsg.SESSION_ERROR);
+        }
+        // 生成path
+        String path = spikeService.createSpikePath(user, goodsId);
+        return Result.success(path);
     }
 
 

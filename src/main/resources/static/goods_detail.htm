@@ -48,7 +48,7 @@
                 <!--                    <button class="btn btn-primary btn-block" type="submit" id="buyButton">立即秒杀</button>-->
                 <!--                    <input type="hidden" name="goodsId" id="goodsId"/>-->
                 <!--                </form>-->
-                <button class="btn btn-primary btn-block" type="button" id="buyButton" onclick="doSpike()">立即秒杀</button>
+                <button class="btn btn-primary btn-block" type="button" id="buyButton" onclick="getSpikePath()">立即秒杀</button>
                 <input type="hidden" name="goodsId" id="goodsId"/>
             </td>
         </tr>
@@ -71,8 +71,32 @@
 
     $(function () {
         //countDown();
+        // 获取详情页
         getDetail();
     });
+
+    function getSpikePath() {
+        var goodId = $("#goodsId").val();
+        g_showLoading();
+        $.ajax({
+            url: "/spike/path",
+            type: "GET",
+            data: {
+                goodsId:goodId
+            },
+            success: function (data) {
+                if (data.code == 0) {
+                    var path = data.data;
+                    doSpike(path);
+                } else {
+                    layer.msg(data.msg);
+                }
+            },
+            error: function () {
+                layer.msg("客户端请求有误");
+            }
+        });
+    }
 
     function getSpikeResult(goodsId) {
         g_showLoading();
@@ -91,7 +115,7 @@
                     } else if (result == 0) {
                         setTimeout(function (){
                             getSpikeResult(goodsId);
-                        }, 50);
+                        }, 200);
                     } else {
                         layer.confirm("秒杀成功！查看订单", {btn: ["确定", "取消"]},
                             function () {
@@ -112,9 +136,9 @@
         });
     }
 
-    function doSpike() {
+    function doSpike(path) {
         $.ajax({
-            url: "/spike/do_spike",
+            url: "/spike/" + path +"do_spike",
             type: "POST",
             data: {
                 goodsId: $("#goodsId").val(),

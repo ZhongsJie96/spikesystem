@@ -5,6 +5,8 @@ import com.zhongsjie.domain.SpikeOrder;
 import com.zhongsjie.domain.SpikeUser;
 import com.zhongsjie.redis.RedisService;
 import com.zhongsjie.redis.SpikeKey;
+import com.zhongsjie.utils.MD5Util;
+import com.zhongsjie.utils.UUIDUtil;
 import com.zhongsjie.vo.GoodsVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -61,5 +63,18 @@ public class SpikeService {
         }
     }
 
+    public boolean checkPath(SpikeUser user, long goodsId, String path) {
+        if (user == null || path == null) {
+            return false;
+        }
+        String pathOld = redisService.get(SpikeKey.getSpikePath, "" + user.getId() + "_" + goodsId, String.class);
+        return path.equals(pathOld);
+    }
 
+    public String createSpikePath(SpikeUser user, long goodsId) {
+        String str = MD5Util.md5(UUIDUtil.uuid() + "123456");
+        // 保存到Redis
+        redisService.set(SpikeKey.getSpikePath, ""+ user.getId() + "_" + goodsId, str);
+        return str;
+    }
 }
