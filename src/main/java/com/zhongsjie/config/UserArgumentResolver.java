@@ -15,17 +15,35 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+/**
+ * 分布式session优化
+ *
+ */
 @Service
 public class UserArgumentResolver implements HandlerMethodArgumentResolver {
     @Autowired
     SpikeUserService userService;
 
+    /**
+     * 类型判断，是否为SpikeUser类
+     * @param methodParameter
+     * @return
+     */
     @Override
     public boolean supportsParameter(MethodParameter methodParameter) {
         Class<?> clazz = methodParameter.getParameterType();
         return clazz == SpikeUser.class;
     }
 
+    /**
+     * 获取User对象的参数值
+     * @param methodParameter
+     * @param modelAndViewContainer
+     * @param nativeWebRequest
+     * @param webDataBinderFactory
+     * @return
+     * @throws Exception
+     */
     @Override
     public Object resolveArgument(MethodParameter methodParameter,
                                   ModelAndViewContainer modelAndViewContainer,
@@ -39,6 +57,7 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
         if (StringUtils.isEmpty(cookieToken) && StringUtils.isEmpty(paramToken)) {
             return "login";
         }
+        /*有先从paramToken 中取出 cookie值 若没有从 cookieToken 中取*/
         String token = StringUtils.isEmpty(paramToken) ? cookieToken : paramToken;
         // 利用token从redis找到用户
         return userService.getByToken(response, token);

@@ -44,12 +44,12 @@
             </td>
             <td>
                 <!-- 表单提交-->
-<!--                <form id="spikeForm" method="post" action="/spike/do_spike">-->
-<!--                    <button class="btn btn-primary btn-block" type="submit" id="buyButton">立即秒杀</button>-->
-<!--                    <input type="hidden" name="goodsId" id="goodsId"/>-->
-<!--                </form>-->
+                <!--                <form id="spikeForm" method="post" action="/spike/do_spike">-->
+                <!--                    <button class="btn btn-primary btn-block" type="submit" id="buyButton">立即秒杀</button>-->
+                <!--                    <input type="hidden" name="goodsId" id="goodsId"/>-->
+                <!--                </form>-->
                 <button class="btn btn-primary btn-block" type="button" id="buyButton" onclick="doSpike()">立即秒杀</button>
-                <input type="hidden" name="goodsId"  id="goodsId" />
+                <input type="hidden" name="goodsId" id="goodsId"/>
             </td>
         </tr>
         <tr>
@@ -74,28 +74,69 @@
         getDetail();
     });
 
-    function doSpike(){
+    function getSpikeResult(goodsId) {
+        g_showLoading();
         $.ajax({
-            url:"/spike/do_spike",
-            type:"POST",
-            data:{
-                goodsId:$("#goodsId").val(),
+            url: "/spike/result",
+            type: "GET",
+            data: {
+                goodsId: $("#goodsId").val(),
             },
-            success:function(data){
-                // 成功进行页面跳转
-                if(data.code == 0){
-                    // 当前页面打开URL页面
-                    self.location.href="/order_detail.htm?orderId="+data.data.id;
-                }else{
+            success: function (data) {
+                if (data.code == 0) {
+                    var result = data.data;
+                    if (result < 0) {
+                        layer.msg("秒杀失败");
+                    // 继续轮询 (50毫秒）
+                    } else if (result == 0) {
+                        setTimeout(function (){
+                            getSpikeResult(goodsId);
+                        }, 50);
+                    } else {
+                        layer.confirm("秒杀成功！查看订单", {btn: ["确定", "取消"]},
+                            function () {
+                                self.location.href = "/order_detail.htm?orderId=" + data.data.id;
+                            },
+                            function () {
+                                layer.closeAll();
+                            });
+
+                    }
+                } else {
                     layer.msg(data.msg);
                 }
             },
-            error:function(){
+            error: function () {
+                layer.msg("客户端请求有误");
+            }
+        });
+    }
+
+    function doSpike() {
+        $.ajax({
+            url: "/spike/do_spike",
+            type: "POST",
+            data: {
+                goodsId: $("#goodsId").val(),
+            },
+            success: function (data) {
+                // 成功进行页面跳转
+                if (data.code == 0) {
+                    // 当前页面打开URL页面
+                    // self.location.href="/order_detail.htm?orderId="+data.data.id;
+                    // 进行轮询 获取秒杀结果
+                    getSpikeResult($("#goodsId").val())
+                } else {
+                    layer.msg(data.msg);
+                }
+            },
+            error: function () {
                 layer.msg("客户端请求有误");
             }
         });
 
     }
+
     // 页面渲染
     function render(detail) {
         var spikeStatus = detail.spikeStatus;
@@ -133,6 +174,7 @@
             }
         });
     }
+
     // 倒计时
     function countDown() {
         var remainSeconds = $("#remainSeconds").val();

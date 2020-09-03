@@ -10,4 +10,6 @@ public class GoodsKey extends BasePredix {
     /** 详情页redis缓存*/
     public static GoodsKey getGoodsDetail = new GoodsKey(60,"gd");
 
+    public static GoodsKey getSpikeGoodsStock = new GoodsKey(0,"gs");
+
 }

@@ -110,7 +110,7 @@ public class SpikeUserService {
     private void addCookie(HttpServletResponse response, String token, SpikeUser user) {
         // 在redis之中进行缓存
         redisService.set(SpikeUserKey.token, token, user);
-        // cookie
+        // 利用token生成cookie
         Cookie cookie = new Cookie(COOKI_NAME_TOKEN, token);
         // 设置过期时间
         cookie.setMaxAge(SpikeUserKey.token.expireSeconds());
@@ -124,7 +124,7 @@ public class SpikeUserService {
             return null;
         }
         SpikeUser user = redisService.get(SpikeUserKey.token, token, SpikeUser.class);
-        // 延长有效期
+        // 每次访问页面的时候延长有效期
         if (user != null) {
             addCookie(response, token, user);
         }

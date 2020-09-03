@@ -24,6 +24,7 @@ public class OrderService {
 
     public SpikeOrder getSpikeOrderByUserIdGoodsId(long userId, long goodsId) {
 //        return orderDao.getSpikeOrderByUserIdGoodsId(userId, goodsId);
+        // 从Redis中取数据
         return redisService.get(OrderKey.getSpikeOrderByUidGid, "" + userId +"_"+goodsId, SpikeOrder.class);
     }
     /** 获取订单信息*/
@@ -43,11 +44,12 @@ public class OrderService {
         orderInfo.setOrderChannel(1);
         orderInfo.setStatus(0);
         orderInfo.setUserId(user.getId());
-        long orderId = orderDao.insert(orderInfo);
-
+        // 插入订单
+        orderDao.insert(orderInfo);
+        // 生成秒杀订单
         SpikeOrder spikeOrder = new SpikeOrder();
         spikeOrder.setGoodsId(goods.getId());
-        spikeOrder.setOrderId(orderId);
+        spikeOrder.setOrderId(orderInfo.getId());
         spikeOrder.setUserId(user.getId());
         // 写入数据库
         orderDao.insertSpikeOrder(spikeOrder);
