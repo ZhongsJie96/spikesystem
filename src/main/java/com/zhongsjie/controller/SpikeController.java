@@ -1,11 +1,11 @@
 package com.zhongsjie.controller;
 
+import com.zhongsjie.access.AccessLimit;
 import com.zhongsjie.domain.OrderInfo;
 import com.zhongsjie.domain.SpikeOrder;
 import com.zhongsjie.domain.SpikeUser;
 import com.zhongsjie.rabbitmq.MQSender;
 import com.zhongsjie.rabbitmq.SpikeMessage;
-import com.zhongsjie.redis.AccessKey;
 import com.zhongsjie.redis.GoodsKey;
 import com.zhongsjie.redis.RedisService;
 import com.zhongsjie.result.CodeMsg;
@@ -165,12 +165,13 @@ public class SpikeController implements InitializingBean {
     }
 
     /**
-     * 随机获取秒杀地址
+     * 随机获取秒杀地址,通过注解来拦截用户
      *
      * @param user
      * @param goodsId
      * @return
      */
+    @AccessLimit(seconds = 5, maxCount = 5, needLogin = true)
     @RequestMapping(value = "/path", method = RequestMethod.GET)
     @ResponseBody
     public Result<String> getSpikePath(HttpServletRequest request, SpikeUser user,
@@ -180,16 +181,6 @@ public class SpikeController implements InitializingBean {
             return Result.error(CodeMsg.SESSION_ERROR);
         }
         // 查询访问次数
-        String uri = request.getRequestURI();
-        String key= uri + "_" + user.getId();
-        Integer count = redisService.get(AccessKey.getAccessKey, key, Integer.class);
-        if (count == null) {
-            redisService.set(AccessKey.getAccessKey, key, 1);
-        } else if (count < 5) {
-            redisService.incr(AccessKey.getAccessKey, key);
-        } else {
-            return Result.error(CodeMsg.ACCESS_LIMIT);
-        }
 
         // 对验证码进行测试
         boolean check = spikeService.checkVerifyCode(user, goodsId, verifyCode);

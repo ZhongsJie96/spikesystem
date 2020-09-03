@@ -6,6 +6,9 @@ public class AccessKey extends BasePredix {
         super(expireSeconds, prefix);
     }
 
-    public static AccessKey getAccessKey = new AccessKey(5,"access");
+
+    public static AccessKey withExpire(int expireSeconds) {
+        return new AccessKey(expireSeconds, "access");
+    }
 
 }
