@@ -10,6 +10,7 @@
     {
       "name": "redis.host",
       "type": "java.lang.String",
+      "description": "配置 连接池的属性",
       "sourceType": "com.zhongsjie.redis.RedisConfig"
     },
     {

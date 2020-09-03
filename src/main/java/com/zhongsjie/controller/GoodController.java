@@ -4,8 +4,10 @@ package com.zhongsjie.controller;
 import com.zhongsjie.domain.SpikeUser;
 import com.zhongsjie.redis.GoodsKey;
 import com.zhongsjie.redis.RedisService;
+import com.zhongsjie.result.Result;
 import com.zhongsjie.service.GoodsService;
 import com.zhongsjie.service.SpikeUserService;
+import com.zhongsjie.vo.GoodsDetailVo;
 import com.zhongsjie.vo.GoodsVo;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +75,7 @@ public class GoodController {
 
     @RequestMapping(value="/to_detail/{goodsId}", produces="text/html")
     @ResponseBody
-    public String detail(HttpServletRequest request, HttpServletResponse response, Model model,SpikeUser user,
+    public String detail2(HttpServletRequest request, HttpServletResponse response, Model model,SpikeUser user,
                          @PathVariable("goodsId")long goodsId) {
         model.addAttribute("user", user);
 
@@ -115,6 +117,48 @@ public class GoodController {
             redisService.set(GoodsKey.getGoodsDetail,""+goodsId, html);
         }
         return html;
+    }
+
+    /**
+     * 页面静态化
+     * @param model
+     * @param user
+     * @param goodsId
+     * @return
+     */
+    @RequestMapping(value="/detail/{goodsId}")
+    @ResponseBody
+    public Result<GoodsDetailVo> detail(Model model, SpikeUser user,
+                                        @PathVariable("goodsId") long goodsId) {
+        model.addAttribute("user", user);
+
+        GoodsVo goods = goodsService.getGoodsVoByGoodsId(goodsId);
+
+        long startAt = goods.getStartDate().getTime();
+        long endAt = goods.getEndDate().getTime();
+        long now = System.currentTimeMillis();
+
+        int spikeStatus = 0;
+        int remainSeconds = 0;
+        //秒杀还没开始，倒计时
+        if(now < startAt ) {
+            spikeStatus = 0;
+            remainSeconds = (int)((startAt - now )/1000);
+            //秒杀已经结束
+        }else  if(now > endAt){
+            spikeStatus = 2;
+            remainSeconds = -1;
+        }else {//秒杀进行中
+            spikeStatus = 1;
+            remainSeconds = 0;
+        }
+        // 通过vo对象向页面上传值
+        GoodsDetailVo vo = new GoodsDetailVo();
+        vo.setGoods(goods);
+        vo.setUser(user);
+        vo.setRemainSeconds(remainSeconds);
+        vo.setSpikeStatus(spikeStatus);
+        return Result.success(vo);
     }
 
 

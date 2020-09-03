@@ -1,5 +1,8 @@
 package com.zhongsjie.redis;
 
+/**
+ * 抽象类
+ */
 public abstract class BasePredix implements KeyPrefix {
     /**
      * 过期时间

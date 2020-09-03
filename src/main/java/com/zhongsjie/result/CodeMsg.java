@@ -13,6 +13,10 @@ public class CodeMsg {
     public static CodeMsg MOBILE_ERROR = new CodeMsg(500213, "手机号格式错误");
     public static CodeMsg MOBILE_NOT_EXIST = new CodeMsg(500214, "手机号不存在");
     public static CodeMsg PASSWORD_ERROR = new CodeMsg(500215, "密码错误");
+    public static CodeMsg SESSION_ERROR = new CodeMsg(500210, "Session不存在或者已经失效");
+
+    /**订单模块 5004XX*/
+    public static CodeMsg ORDER_NOT_EXIST = new CodeMsg(500400, "订单不存在");
 
     /** 秒杀模块*/
     public static CodeMsg SPIKE_OVER = new CodeMsg(500500, "秒杀已经完毕");
@@ -21,6 +25,11 @@ public class CodeMsg {
     private int code;
     private String msg;
 
+    /**
+     * 私有化构造器，接口健壮
+     * @param code
+     * @param msg
+     */
     private CodeMsg(int code, String msg) {
         this.code = code;
         this.msg = msg;
@@ -42,7 +51,10 @@ public class CodeMsg {
         this.code = code;
     }
 
-
+    /** 该方法用于返回一个CodeMsg对象 便于 全局异常处理的调用
+     *  全局异常处理传入 objects 参数，并返回一个CodeMsg 对象
+     *  该方法根据入参 显示 对应的异常code , 以及加入 异常信息的msg显示
+     * */
     public CodeMsg fillArgs(Object... args) {
         int code = this.code;
         String message = String.format(this.msg, args);

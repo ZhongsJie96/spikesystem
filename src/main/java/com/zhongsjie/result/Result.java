@@ -1,6 +1,5 @@
 package com.zhongsjie.result;
 
-import com.sun.javafx.logging.PulseLogger;
 
 public class Result<T> {
     private int code;
