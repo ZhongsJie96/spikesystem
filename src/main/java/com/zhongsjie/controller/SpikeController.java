@@ -19,6 +19,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import javax.imageio.ImageIO;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +50,7 @@ public class SpikeController implements InitializingBean {
 
     /**
      * 系统初始化时运行
+     *
      * @throws Exception
      */
     @Override
@@ -64,6 +70,7 @@ public class SpikeController implements InitializingBean {
 
     /**
      * 秒杀页面静态化
+     *
      * @param model
      * @param user
      * @param goodsId
@@ -73,7 +80,7 @@ public class SpikeController implements InitializingBean {
     @ResponseBody
     public Result<Integer> spike(Model model, SpikeUser user,
                                  @RequestParam("goodsId") long goodsId,
-                                 @PathVariable("path")String path) {
+                                 @PathVariable("path") String path) {
         model.addAttribute("user", user);
         if (user == null) {
             return Result.error(CodeMsg.SESSION_ERROR);
@@ -113,19 +120,19 @@ public class SpikeController implements InitializingBean {
         return Result.success(0);
 
         /**
-        //判断库存
-        GoodsVo goods = goodsService.getGoodsVoByGoodsId(goodsId);
-        int stock = goods.getStockCount();
-        if (stock <= 0) {
-            return Result.error(CodeMsg.SPIKE_OVER);
-        }
-        //判断是否已经秒杀到了
-        SpikeOrder order = orderService.getSpikeOrderByUserIdGoodsId(user.getId(), goodsId);
-        if (order != null) {
-            return Result.error(CodeMsg.REPEAT_SPIKE);
-        }
-        //减库存 下订单 写入秒杀订单
-        OrderInfo orderInfo = spikeService.spike(user, goods);
+         //判断库存
+         GoodsVo goods = goodsService.getGoodsVoByGoodsId(goodsId);
+         int stock = goods.getStockCount();
+         if (stock <= 0) {
+         return Result.error(CodeMsg.SPIKE_OVER);
+         }
+         //判断是否已经秒杀到了
+         SpikeOrder order = orderService.getSpikeOrderByUserIdGoodsId(user.getId(), goodsId);
+         if (order != null) {
+         return Result.error(CodeMsg.REPEAT_SPIKE);
+         }
+         //减库存 下订单 写入秒杀订单
+         OrderInfo orderInfo = spikeService.spike(user, goods);
          */
 
 
@@ -136,6 +143,7 @@ public class SpikeController implements InitializingBean {
      * 成功：orderId
      * 失败：-1
      * 排队：0
+     *
      * @param model
      * @param user
      * @param goodsId
@@ -144,7 +152,7 @@ public class SpikeController implements InitializingBean {
     @RequestMapping(value = "/result", method = RequestMethod.GET)
     @ResponseBody
     public Result<Long> spikeResult(Model model, SpikeUser user,
-                                      @RequestParam("goodsId") long goodsId) {
+                                    @RequestParam("goodsId") long goodsId) {
         model.addAttribute("user", user);
         if (user == null) {
             return Result.error(CodeMsg.SESSION_ERROR);
@@ -156,6 +164,7 @@ public class SpikeController implements InitializingBean {
 
     /**
      * 随机获取秒杀地址
+     *
      * @param model
      * @param user
      * @param goodsId
@@ -164,20 +173,57 @@ public class SpikeController implements InitializingBean {
     @RequestMapping(value = "/path", method = RequestMethod.GET)
     @ResponseBody
     public Result<String> getSpikePath(Model model, SpikeUser user,
-                                    @RequestParam("goodsId") long goodsId) {
+                                       @RequestParam("goodsId") long goodsId,
+                                       @RequestParam("verifyCode") int verifyCode) {
         model.addAttribute("user", user);
         if (user == null) {
             return Result.error(CodeMsg.SESSION_ERROR);
         }
+        // 对验证码进行测试
+        boolean check = spikeService.checkVerifyCode(user, goodsId, verifyCode);
+        if (!check) {
+            return Result.error(CodeMsg.REQUEST_ILLEGAL);
+        }
+
         // 生成path
         String path = spikeService.createSpikePath(user, goodsId);
         return Result.success(path);
     }
 
+    /**
+     * 获取验证码图片
+     *
+     * @param response
+     * @param user
+     * @param goodsId
+     * @return
+     */
+    @RequestMapping(value = "/verifyCode", method = RequestMethod.GET)
+    @ResponseBody
+    public Result<String> getSpikeVerifyCode(HttpServletResponse response, SpikeUser user,
+                                             @RequestParam("goodsId") long goodsId) {
+        if (user == null) {
+            return Result.error(CodeMsg.SESSION_ERROR);
+        }
+        // 获得一个验证码图片
+        BufferedImage image = spikeService.createVerifyCode(user, goodsId);
+        try {
+            ServletOutputStream outputStream = response.getOutputStream();
+            // 将图片添加到输出流返回
+            ImageIO.write(image, "JPEG", outputStream);
+            outputStream.flush();
+            outputStream.close();
+            return null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return Result.error(CodeMsg.SPIKE_FAIL);
+        }
+    }
 
 
     /**
-     * 直接跳转页面
+     * 直接跳转页面,没有做前后端分离
+     *
      * @param model
      * @param user
      * @param goodsId

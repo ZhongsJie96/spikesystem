@@ -11,5 +11,7 @@ public class SpikeKey extends BasePredix {
 
     public static SpikeKey getSpikePath = new SpikeKey(60,"go");
 
+    public static SpikeKey getSpikeVerifyCode = new SpikeKey(300,"vc");
+
 
 }

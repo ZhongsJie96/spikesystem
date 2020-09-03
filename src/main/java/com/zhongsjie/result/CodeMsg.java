@@ -22,6 +22,7 @@ public class CodeMsg {
     /** 秒杀模块*/
     public static CodeMsg SPIKE_OVER = new CodeMsg(500500, "秒杀已经完毕");
     public static CodeMsg REPEAT_SPIKE = new CodeMsg(500501, "不能重复秒杀");
+    public static CodeMsg SPIKE_FAIL = new CodeMsg(500502, "秒杀失败");
 
     private int code;
     private String msg;

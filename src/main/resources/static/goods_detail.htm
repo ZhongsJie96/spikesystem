@@ -48,7 +48,16 @@
                 <!--                    <button class="btn btn-primary btn-block" type="submit" id="buyButton">立即秒杀</button>-->
                 <!--                    <input type="hidden" name="goodsId" id="goodsId"/>-->
                 <!--                </form>-->
-                <button class="btn btn-primary btn-block" type="button" id="buyButton" onclick="getSpikePath()">立即秒杀</button>
+                <div class="row">
+                    <div class="form-inline">
+                        <img id="verifyCodeImg" width="80" , height="32" style="display: none"
+                             onclick="refreshVerifyCode()"/>
+                        <input id="verifyCode" class="form-control" style="display: none"/>
+                        <button class="btn btn-primary btn-block" type="button" id="buyButton" onclick="getSpikePath()">
+                            立即秒杀
+                        </button>
+                    </div>
+                </div>
                 <input type="hidden" name="goodsId" id="goodsId"/>
             </td>
         </tr>
@@ -82,7 +91,8 @@
             url: "/spike/path",
             type: "GET",
             data: {
-                goodsId:goodId
+                goodsId: goodId,
+                verifyCode:$("#verifyCode").val()
             },
             success: function (data) {
                 if (data.code == 0) {
@@ -111,9 +121,9 @@
                     var result = data.data;
                     if (result < 0) {
                         layer.msg("秒杀失败");
-                    // 继续轮询 (50毫秒）
+                        // 继续轮询 (50毫秒）
                     } else if (result == 0) {
-                        setTimeout(function (){
+                        setTimeout(function () {
                             getSpikeResult(goodsId);
                         }, 200);
                     } else {
@@ -138,7 +148,7 @@
 
     function doSpike(path) {
         $.ajax({
-            url: "/spike/" + path +"do_spike",
+            url: "/spike/" + path + "do_spike",
             type: "POST",
             data: {
                 goodsId: $("#goodsId").val(),
@@ -219,10 +229,21 @@
                 clearTimeout(timeout);
             }
             $("#spikeTip").html("秒杀进行中");
+            // 添加图形验证码
+            $("#verifyCodeImg").attr("src", "/spike/verifyCode?goodsId=" + $("#goodsId").val());
+            $("#verifyCodeImg").show();
+            $("#verifyCode").show();
+
         } else {//秒杀已经结束
             $("#buyButton").attr("disabled", true);
             $("#spikeTip").html("秒杀已经结束");
+            $("#verifyCodeImg").hide();
+            $("#verifyCode").hide();
         }
+    }
+    // 刷新验证码
+    function refreshVerifyCode() {
+        $("#verifyCodeImg").attr("src", "/spike/verifyCode?goodsId=" + $("#goodsId").val() + "&timestamp=" + new Date().getTime());
     }
 
 </script>
