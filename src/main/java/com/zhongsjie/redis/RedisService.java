@@ -43,6 +43,7 @@ public class RedisService {
             }
             // 生成真正的key
             String realKey = predix.getPrefix() + key;
+            // 设置过期时间
             int seconds = predix.expireSeconds();
             if (seconds <= 0) {
                 jedis.set(realKey, str);

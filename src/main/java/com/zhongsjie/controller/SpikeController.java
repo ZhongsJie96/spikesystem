@@ -5,6 +5,7 @@ import com.zhongsjie.domain.SpikeOrder;
 import com.zhongsjie.domain.SpikeUser;
 import com.zhongsjie.rabbitmq.MQSender;
 import com.zhongsjie.rabbitmq.SpikeMessage;
+import com.zhongsjie.redis.AccessKey;
 import com.zhongsjie.redis.GoodsKey;
 import com.zhongsjie.redis.RedisService;
 import com.zhongsjie.result.CodeMsg;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.imageio.ImageIO;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -165,20 +167,30 @@ public class SpikeController implements InitializingBean {
     /**
      * 随机获取秒杀地址
      *
-     * @param model
      * @param user
      * @param goodsId
      * @return
      */
     @RequestMapping(value = "/path", method = RequestMethod.GET)
     @ResponseBody
-    public Result<String> getSpikePath(Model model, SpikeUser user,
+    public Result<String> getSpikePath(HttpServletRequest request, SpikeUser user,
                                        @RequestParam("goodsId") long goodsId,
                                        @RequestParam("verifyCode") int verifyCode) {
-        model.addAttribute("user", user);
         if (user == null) {
             return Result.error(CodeMsg.SESSION_ERROR);
         }
+        // 查询访问次数
+        String uri = request.getRequestURI();
+        String key= uri + "_" + user.getId();
+        Integer count = redisService.get(AccessKey.getAccessKey, key, Integer.class);
+        if (count == null) {
+            redisService.set(AccessKey.getAccessKey, key, 1);
+        } else if (count < 5) {
+            redisService.incr(AccessKey.getAccessKey, key);
+        } else {
+            return Result.error(CodeMsg.ACCESS_LIMIT);
+        }
+
         // 对验证码进行测试
         boolean check = spikeService.checkVerifyCode(user, goodsId, verifyCode);
         if (!check) {
