@@ -8,7 +8,7 @@ import org.apache.ibatis.annotations.*;
 public interface OrderDao {
 
     @Select("select * from spike_order where user_Id = #{userId} and goods_Id = #{goodsId}")
-    public SpikeOrder getSpikeOrderByUserIdGoodsId(@Param("userId")long userId, @Param("goodsId") long goodsId);
+    SpikeOrder getSpikeOrderByUserIdGoodsId(@Param("userId")long userId, @Param("goodsId") long goodsId);
 
     @Insert("insert into order_info(user_id, goods_id, goods_name, goods_count, goods_price, order_channel, status, create_date)values("
             + "#{userId}, #{goodsId}, #{goodsName}, #{goodsCount}, #{goodsPrice}, #{orderChannel},#{status},#{createDate} )")
@@ -17,4 +17,7 @@ public interface OrderDao {
 
     @Insert("insert into spike_order(user_id, goods_id, order_id)values(#{userId},#{goodsId},#{orderId})")
     int insertSpikeOrder(SpikeOrder spikeOrder);
+
+    @Select("select * from order_info where id = #{orderId}")
+    OrderInfo getOrderById(@Param("orderId") long orderId);
 }

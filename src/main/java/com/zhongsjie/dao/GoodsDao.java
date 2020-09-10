@@ -17,6 +17,6 @@ public interface GoodsDao {
     @SelectKey(keyColumn = "id", keyProperty = "id", resultType = long.class, before = false, statement = "select_insert_id()")
     public GoodsVo getGoodsVoByGoodsId(@Param("goodsId")long goodsId);
 
-    @Update("update spike_goods set stock_count = stock_count - 1 where goods_id = #{goodsId}")
+    @Update("update spike_goods set stock_count=stock_count-1 where goods_id = #{goodsId} and stock_count > 0")
     public int reduceStock(SpikeGoods g);
 }

@@ -31,7 +31,39 @@ public class SpikeUserService {
     SpikeUserDao spikeUserDao;
 
     public SpikeUser getById(long id) {
-        return spikeUserDao.getById(id);
+
+        // 取缓存
+        SpikeUser user = redisService.get(SpikeUserKey.getById, ""+id, SpikeUser.class);
+        if (user != null) {
+            return user;
+        }
+        // 取数据库
+        user = spikeUserDao.getById(id);
+        if (user != null) {
+            redisService.set(SpikeUserKey.getById, ""+id, user);
+        }
+
+//        return spikeUserDao.getById(id);
+        return user;
+    }
+
+    public boolean updatePassword(String token, long id, String formPass) {
+        SpikeUser user = getById(id);
+
+        if (user == null) {
+            throw new GlobalException(CodeMsg.MOBILE_NOT_EXIST);
+        }
+
+        // 更新数据库
+        SpikeUser toBeUpdate = new SpikeUser();
+        toBeUpdate.setId(id);
+        toBeUpdate.setPassword(MD5Util.formPassToDBPass(formPass, user.getSalt()));
+        spikeUserDao.update(toBeUpdate);
+        // 处理缓存
+        redisService.delete(SpikeUserKey.getById,""+id);
+        user.setPassword(toBeUpdate.getPassword());
+        redisService.set(SpikeUserKey.token, token, user);
+        return true;
     }
 
     /**
@@ -50,7 +82,7 @@ public class SpikeUserService {
         // 1. 判断用户是否存在，从数据库获取用户
         SpikeUser user = getById(Long.parseLong(mobile));
         if (user == null) {
-            throw new GlobalException(CodeMsg.MOBILE_NO_EXIST);
+            throw new GlobalException(CodeMsg.MOBILE_NOT_EXIST);
         }
         // 2. 验证密码
         String dbPass = user.getPassword();
@@ -78,7 +110,7 @@ public class SpikeUserService {
     private void addCookie(HttpServletResponse response, String token, SpikeUser user) {
         // 在redis之中进行缓存
         redisService.set(SpikeUserKey.token, token, user);
-        // cookie
+        // 利用token生成cookie
         Cookie cookie = new Cookie(COOKI_NAME_TOKEN, token);
         // 设置过期时间
         cookie.setMaxAge(SpikeUserKey.token.expireSeconds());
@@ -92,7 +124,7 @@ public class SpikeUserService {
             return null;
         }
         SpikeUser user = redisService.get(SpikeUserKey.token, token, SpikeUser.class);
-        // 延长有效期
+        // 每次访问页面的时候延长有效期
         if (user != null) {
             addCookie(response, token, user);
         }

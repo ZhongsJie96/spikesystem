@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix="redis")
 public class RedisConfig {
+    /** 配置 连接池的属性 */
     private String host;
     private int port;
     private int timeout;//秒

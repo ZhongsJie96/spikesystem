@@ -6,8 +6,9 @@ public class SpikeUserKey extends BasePredix{
     /** 添加有效期*/
     public static SpikeUserKey token = new SpikeUserKey(TOKEN_EXPIRE, "tk");
 
+    public static SpikeUserKey getById = new SpikeUserKey(0, "id");
+
     public SpikeUserKey(int tokenExpire, String tk) {
         super(tokenExpire, tk);
-
     }
 }

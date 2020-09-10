@@ -12,6 +12,7 @@ public class RedisPoolFactory {
     @Autowired
     RedisConfig redisConfig;
 
+    /** 通过配置文件 生成配置一个 Bean 连接池对象 */
     @Bean
     public JedisPool JedisPoolFactory() {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
