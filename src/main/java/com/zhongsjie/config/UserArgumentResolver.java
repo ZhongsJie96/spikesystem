@@ -34,7 +34,7 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
     }
 
     /**
-     * 获取User对象的参数值
+     * 从session中获取User对象的参数值
      * @param methodParameter
      * @param modelAndViewContainer
      * @param nativeWebRequest
